@@ -1,36 +1,21 @@
 import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
+import Credentials from 'next-auth/providers/credentials';
 
 const handler = NextAuth({
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    }),
-    CredentialsProvider({
-      name: 'Credentials',
+    Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        // In a real app, you'd verify against a database
-        // For demo purposes, we'll accept any valid-looking credentials
-        const users = [
-          { id: '1', name: 'Demo User', email: 'demo@example.com', password: 'demo123' },
-        ];
-
-        const user = users.find(
-          (u) => u.email === credentials.email && u.password === credentials.password
-        );
-
-        if (user) {
-          return { id: user.id, name: user.name, email: user.email };
+        // Demo user - in production, verify against database
+        if (credentials.email === 'demo@example.com' && credentials.password === 'demo123') {
+          return { id: '1', name: 'Demo User', email: credentials.email };
         }
 
         return null;
@@ -44,13 +29,13 @@ const handler = NextAuth({
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = user.id as string;
       }
       return token;
     },
-    async session({ session, token }) {
+    session({ session, token }) {
       if (session.user) {
         (session.user as { id?: string }).id = token.id as string;
       }
